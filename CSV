@@ -1,1 +1,56 @@
+#!/usr/bin/env python3
+"""
+Upload a local CSV file to a public GitHub Gist.
 
+Usage:
+  python3 upload_gist.py YOUR_GITHUB_TOKEN path/to/零食电商数据.csv
+
+Requires:
+  - requests library (pip install requests)
+  - The provided token must have 'gist' scope.
+
+Output:
+  Prints the created Gist URL on success.
+"""
+import sys
+import requests
+import os
+
+if len(sys.argv) < 3:
+    print("Usage: python3 upload_gist.py YOUR_GITHUB_TOKEN path/to/零食电商数据.csv")
+    sys.exit(1)
+
+token = sys.argv[1].strip()
+filepath = sys.argv[2]
+
+if not os.path.isfile(filepath):
+    print(f"File not found: {filepath}")
+    sys.exit(1)
+
+with open(filepath, "r", encoding="utf-8") as f:
+    content = f.read()
+
+filename = os.path.basename(filepath)
+
+payload = {
+    "description": "Synthetic snack ecommerce data",
+    "public": True,
+    "files": {
+        filename: {
+            "content": content
+        }
+    }
+}
+
+headers = {
+    "Authorization": f"token {token}",
+    "Accept": "application/vnd.github+json"
+}
+
+resp = requests.post("https://api.github.com/gists", json=payload, headers=headers)
+if resp.status_code in (200, 201):
+    data = resp.json()
+    print("Gist created:", data.get("html_url"))
+else:
+    print("Failed to create gist:", resp.status_code)
+    print(resp.text)
